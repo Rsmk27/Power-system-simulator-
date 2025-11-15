@@ -1,0 +1,1312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PowerPulse 360° - Power System Simulator</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <!-- GSAP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-dark: #0E1117;
+            --accent-neon: #00FFD1;
+            --highlight-yellow: #FFB100;
+            --text-light: #E0E0E0;
+            --text-dark: #8A8A8A;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(14, 17, 23, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            padding: 1rem 2rem;
+            border-bottom: 2px solid var(--accent-neon);
+            box-shadow: 0 0 20px rgba(0, 255, 209, 0.3);
+        }
+
+        nav .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        nav .logo {
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: var(--accent-neon);
+            text-shadow: 0 0 10px rgba(0, 255, 209, 0.5);
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            gap: 2rem;
+        }
+
+        nav ul li a {
+            color: var(--text-light);
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        nav ul li a:hover {
+            color: var(--accent-neon);
+            text-shadow: 0 0 10px rgba(0, 255, 209, 0.5);
+        }
+
+        /* Hero Section */
+        .hero {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .hero h1 {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--accent-neon), var(--highlight-yellow));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: glow 2s ease-in-out infinite;
+        }
+
+        .hero p {
+            font-size: 1.5rem;
+            color: var(--text-dark);
+            margin-bottom: 2rem;
+        }
+
+        .cta-button {
+            background: linear-gradient(135deg, var(--accent-neon), #00B894);
+            color: var(--bg-dark);
+            padding: 1rem 2.5rem;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+            box-shadow: 0 0 20px rgba(0, 255, 209, 0.3);
+        }
+
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 0 30px rgba(0, 255, 209, 0.6);
+        }
+
+        /* Section Styles */
+        .section {
+            min-height: 100vh;
+            padding: 6rem 2rem;
+            position: relative;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: var(--accent-neon);
+            text-align: center;
+            text-shadow: 0 0 20px rgba(0, 255, 209, 0.3);
+        }
+
+        .section-subtitle {
+            text-align: center;
+            color: var(--text-dark);
+            font-size: 1.2rem;
+            margin-bottom: 4rem;
+        }
+
+        /* Generation Section */
+        .power-plants {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .plant-card {
+            background: linear-gradient(135deg, rgba(0, 255, 209, 0.1), rgba(14, 17, 23, 0.8));
+            border: 2px solid var(--accent-neon);
+            border-radius: 15px;
+            padding: 2rem;
+            transition: all 0.3s;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .plant-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(0, 255, 209, 0.1) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .plant-card:hover::before {
+            opacity: 1;
+        }
+
+        .plant-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 40px rgba(0, 255, 209, 0.3);
+            border-color: var(--highlight-yellow);
+        }
+
+        .plant-icon {
+            font-size: 4rem;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .plant-card h3 {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            color: var(--accent-neon);
+            text-align: center;
+        }
+
+        .plant-card p {
+            color: var(--text-dark);
+            line-height: 1.8;
+        }
+
+        .process-flow {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(0, 255, 209, 0.3);
+        }
+
+        .process-step {
+            text-align: center;
+            font-size: 0.9rem;
+            color: var(--highlight-yellow);
+        }
+
+        /* Transmission Section */
+        .transmission-visual {
+            position: relative;
+            height: 500px;
+            margin: 3rem 0;
+            background: linear-gradient(to bottom, transparent, rgba(0, 255, 209, 0.05));
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        .transmission-lines {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+
+        .power-line {
+            position: absolute;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent-neon), var(--highlight-yellow), var(--accent-neon));
+            animation: powerFlow 3s linear infinite;
+        }
+
+        @keyframes powerFlow {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 200% 50%; }
+        }
+
+        .substation {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            background: radial-gradient(circle, var(--accent-neon), transparent);
+            border: 3px solid var(--accent-neon);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        /* Distribution Section */
+        .distribution-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .meter-card {
+            background: rgba(0, 255, 209, 0.05);
+            border: 2px solid var(--accent-neon);
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .gauge {
+            width: 150px;
+            height: 150px;
+            margin: 1rem auto;
+            position: relative;
+            border: 5px solid var(--accent-neon);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .gauge-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent-neon);
+        }
+
+        .voltage-indicator {
+            height: 10px;
+            background: linear-gradient(90deg, #00FF00, var(--highlight-yellow), #FF0000);
+            border-radius: 5px;
+            margin-top: 1rem;
+            position: relative;
+        }
+
+        .voltage-marker {
+            position: absolute;
+            width: 4px;
+            height: 20px;
+            background: white;
+            top: -5px;
+            transition: left 0.5s;
+        }
+
+        /* Consumer Section */
+        .smart-home {
+            background: rgba(0, 255, 209, 0.05);
+            border: 2px solid var(--accent-neon);
+            border-radius: 15px;
+            padding: 3rem;
+            margin-top: 3rem;
+        }
+
+        .appliances {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .appliance {
+            background: rgba(14, 17, 23, 0.8);
+            border: 2px solid var(--text-dark);
+            border-radius: 10px;
+            padding: 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .appliance.active {
+            border-color: var(--accent-neon);
+            box-shadow: 0 0 20px rgba(0, 255, 209, 0.3);
+        }
+
+        .appliance-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .power-meter {
+            text-align: center;
+            margin-top: 2rem;
+            padding: 2rem;
+            background: linear-gradient(135deg, rgba(0, 255, 209, 0.1), rgba(255, 177, 0, 0.1));
+            border-radius: 15px;
+        }
+
+        .power-reading {
+            font-size: 3rem;
+            color: var(--highlight-yellow);
+            font-weight: 700;
+        }
+
+        /* Simulation Lab */
+        .simulation-container {
+            background: rgba(0, 255, 209, 0.05);
+            border: 2px solid var(--accent-neon);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-top: 3rem;
+            min-height: 600px;
+        }
+
+        .component-palette {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .component-item {
+            background: var(--bg-dark);
+            border: 2px solid var(--accent-neon);
+            border-radius: 10px;
+            padding: 1rem 2rem;
+            cursor: grab;
+            transition: all 0.3s;
+        }
+
+        .component-item:hover {
+            background: rgba(0, 255, 209, 0.1);
+            transform: scale(1.05);
+        }
+
+        .canvas-area {
+            background: rgba(14, 17, 23, 0.5);
+            border: 2px dashed var(--text-dark);
+            border-radius: 10px;
+            min-height: 400px;
+            position: relative;
+        }
+
+        .simulation-controls {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+            justify-content: center;
+        }
+
+        .sim-button {
+            background: var(--accent-neon);
+            color: var(--bg-dark);
+            border: none;
+            padding: 0.8rem 2rem;
+            border-radius: 25px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .sim-button:hover {
+            background: var(--highlight-yellow);
+            transform: translateY(-2px);
+        }
+
+        .sim-button.danger {
+            background: #FF4757;
+        }
+
+        /* About Section */
+        .about-content {
+            max-width: 900px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .about-content p {
+            font-size: 1.2rem;
+            line-height: 2;
+            margin-bottom: 2rem;
+            color: var(--text-dark);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .feature-card {
+            background: rgba(0, 255, 209, 0.05);
+            border: 2px solid var(--accent-neon);
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Contact Form */
+        .contact-form {
+            max-width: 600px;
+            margin: 3rem auto;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--accent-neon);
+            font-weight: 600;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(0, 255, 209, 0.05);
+            border: 2px solid var(--text-dark);
+            border-radius: 10px;
+            color: var(--text-light);
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--accent-neon);
+            box-shadow: 0 0 10px rgba(0, 255, 209, 0.3);
+        }
+
+        .form-group textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+
+        /* Footer */
+        footer {
+            background: rgba(14, 17, 23, 0.95);
+            border-top: 2px solid var(--accent-neon);
+            padding: 2rem;
+            text-align: center;
+            margin-top: 4rem;
+        }
+
+        footer p {
+            color: var(--text-dark);
+        }
+
+        /* Animations */
+        @keyframes glow {
+            0%, 100% { filter: drop-shadow(0 0 10px rgba(0, 255, 209, 0.5)); }
+            50% { filter: drop-shadow(0 0 20px rgba(0, 255, 209, 0.8)); }
+        }
+
+        .fade-in {
+            opacity: 0;
+            transform: translateY(30px);
+            animation: fadeIn 0.8s forwards;
+        }
+
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            nav ul {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero p {
+                font-size: 1.2rem;
+            }
+
+            .section-title {
+                font-size: 2rem;
+            }
+
+            .power-plants,
+            .distribution-grid,
+            .appliances {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Loading Animation */
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-dark);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            transition: opacity 0.5s;
+        }
+
+        .loading.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loader {
+            width: 50px;
+            height: 50px;
+            border: 5px solid var(--text-dark);
+            border-top-color: var(--accent-neon);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div class="loading" id="loading">
+        <div class="loader"></div>
+    </div>
+
+    <!-- Navigation -->
+    <nav>
+        <div class="container">
+            <div class="logo">⚡ PowerPulse 360°</div>
+            <ul>
+                <li><a href="#home">Home</a></li>
+                <li><a href="#generation">Generation</a></li>
+                <li><a href="#transmission">Transmission</a></li>
+                <li><a href="#distribution">Distribution</a></li>
+                <li><a href="#consumer">Consumer</a></li>
+                <li><a href="#simulation">Simulation</a></li>
+                <li><a href="#about">About</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero" id="home">
+        <div id="canvas-container"></div>
+        <div class="hero-content">
+            <h1>PowerPulse 360°</h1>
+            <p>Experience the Complete Power System Journey</p>
+            <a href="#generation" class="cta-button">Start Exploring</a>
+        </div>
+    </section>
+
+    <!-- Generation Section -->
+    <section class="section" id="generation">
+        <div class="container">
+            <h2 class="section-title">Power Generation</h2>
+            <p class="section-subtitle">Explore different types of power plants and how they generate electricity</p>
+            
+            <div class="power-plants">
+                <div class="plant-card" data-plant="thermal">
+                    <div class="plant-icon">🔥</div>
+                    <h3>Thermal Power</h3>
+                    <p>Coal, gas, or oil combustion heats water to produce steam that drives turbines.</p>
+                    <div class="process-flow">
+                        <div class="process-step">Fuel ➜</div>
+                        <div class="process-step">Boiler ➜</div>
+                        <div class="process-step">Turbine ➜</div>
+                        <div class="process-step">Generator</div>
+                    </div>
+                </div>
+
+                <div class="plant-card" data-plant="hydro">
+                    <div class="plant-icon">💧</div>
+                    <h3>Hydro Power</h3>
+                    <p>Water stored in dams flows through turbines to generate clean electricity.</p>
+                    <div class="process-flow">
+                        <div class="process-step">Dam ➜</div>
+                        <div class="process-step">Penstock ➜</div>
+                        <div class="process-step">Turbine ➜</div>
+                        <div class="process-step">Generator</div>
+                    </div>
+                </div>
+
+                <div class="plant-card" data-plant="solar">
+                    <div class="plant-icon">☀️</div>
+                    <h3>Solar Power</h3>
+                    <p>Photovoltaic cells convert sunlight directly into electricity through the photovoltaic effect.</p>
+                    <div class="process-flow">
+                        <div class="process-step">Sunlight ➜</div>
+                        <div class="process-step">PV Cell ➜</div>
+                        <div class="process-step">Inverter ➜</div>
+                        <div class="process-step">Grid</div>
+                    </div>
+                </div>
+
+                <div class="plant-card" data-plant="wind">
+                    <div class="plant-icon">💨</div>
+                    <h3>Wind Power</h3>
+                    <p>Wind turns turbine blades connected to generators to produce renewable energy.</p>
+                    <div class="process-flow">
+                        <div class="process-step">Wind ➜</div>
+                        <div class="process-step">Blades ➜</div>
+                        <div class="process-step">Gearbox ➜</div>
+                        <div class="process-step">Generator</div>
+                    </div>
+                </div>
+
+                <div class="plant-card" data-plant="nuclear">
+                    <div class="plant-icon">☢️</div>
+                    <h3>Nuclear Power</h3>
+                    <p>Nuclear fission releases heat to produce steam for turbines with zero emissions.</p>
+                    <div class="process-flow">
+                        <div class="process-step">Fission ➜</div>
+                        <div class="process-step">Reactor ➜</div>
+                        <div class="process-step">Steam ➜</div>
+                        <div class="process-step">Turbine</div>
+                    </div>
+                </div>
+
+                <div class="plant-card" data-plant="geothermal">
+                    <div class="plant-icon">🌋</div>
+                    <h3>Geothermal</h3>
+                    <p>Earth's internal heat produces steam that drives turbines for sustainable power.</p>
+                    <div class="process-flow">
+                        <div class="process-step">Heat ➜</div>
+                        <div class="process-step">Well ➜</div>
+                        <div class="process-step">Steam ➜</div>
+                        <div class="process-step">Turbine</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Transmission Section -->
+    <section class="section" id="transmission">
+        <div class="container">
+            <h2 class="section-title">Power Transmission</h2>
+            <p class="section-subtitle">High-voltage transmission lines carry electricity across long distances</p>
+            
+            <div class="transmission-visual">
+                <div class="transmission-lines" id="transmissionLines"></div>
+            </div>
+
+            <div class="power-plants">
+                <div class="plant-card">
+                    <div class="plant-icon">⚡</div>
+                    <h3>Step-Up Transformer</h3>
+                    <p>Increases voltage from 11-33 kV to 220-765 kV for efficient long-distance transmission, reducing power losses.</p>
+                </div>
+
+                <div class="plant-card">
+                    <div class="plant-icon">🔌</div>
+                    <h3>Transmission Lines</h3>
+                    <p>High-voltage conductors supported by towers carry power across hundreds of kilometers with minimal losses.</p>
+                </div>
+
+                <div class="plant-card">
+                    <div class="plant-icon">🏭</div>
+                    <h3>Substations</h3>
+                    <p>Critical nodes that transform voltage levels, monitor grid health, and route power to different areas.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Distribution Section -->
+    <section class="section" id="distribution">
+        <div class="container">
+            <h2 class="section-title">Power Distribution</h2>
+            <p class="section-subtitle">Delivering electricity from substations to neighborhoods and consumers</p>
+            
+            <div class="distribution-grid">
+                <div class="meter-card">
+                    <h3>Distribution Transformer</h3>
+                    <div class="gauge">
+                        <div class="gauge-value" id="distVoltage">11 kV</div>
+                    </div>
+                    <p>Steps down voltage to usable levels</p>
+                </div>
+
+                <div class="meter-card">
+                    <h3>Load Balance</h3>
+                    <div class="gauge">
+                        <div class="gauge-value" id="loadBalance">75%</div>
+                    </div>
+                    <p>Monitoring power distribution</p>
+                </div>
+
+                <div class="meter-card">
+                    <h3>Voltage Drop</h3>
+                    <div class="voltage-indicator">
+                        <div class="voltage-marker" id="voltageMarker" style="left: 60%;"></div>
+                    </div>
+                    <p style="margin-top: 1.5rem;">Acceptable range: 220V ± 10%</p>
+                </div>
+
+                <div class="meter-card">
+                    <h3>Power Quality</h3>
+                    <div class="gauge">
+                        <div class="gauge-value" id="powerQuality">98%</div>
+                    </div>
+                    <p>Grid reliability and stability</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Consumer Section -->
+    <section class="section" id="consumer">
+        <div class="container">
+            <h2 class="section-title">Consumer Side</h2>
+            <p class="section-subtitle">Interactive smart home - Click appliances to turn them ON/OFF</p>
+            
+            <div class="smart-home">
+                <h3 style="text-align: center; margin-bottom: 2rem; color: var(--accent-neon);">🏠 Smart Home Energy Management</h3>
+                
+                <div class="appliances">
+                    <div class="appliance" data-power="100" data-name="LED Lights">
+                        <div class="appliance-icon">💡</div>
+                        <p>LED Lights</p>
+                        <small>100W</small>
+                    </div>
+
+                    <div class="appliance" data-power="1500" data-name="Air Conditioner">
+                        <div class="appliance-icon">❄️</div>
+                        <p>AC</p>
+                        <small>1500W</small>
+                    </div>
+
+                    <div class="appliance" data-power="150" data-name="Refrigerator">
+                        <div class="appliance-icon">🧊</div>
+                        <p>Refrigerator</p>
+                        <small>150W</small>
+                    </div>
+
+                    <div class="appliance" data-power="2000" data-name="Water Heater">
+                        <div class="appliance-icon">🚿</div>
+                        <p>Water Heater</p>
+                        <small>2000W</small>
+                    </div>
+
+                    <div class="appliance" data-power="1200" data-name="Microwave">
+                        <div class="appliance-icon">📡</div>
+                        <p>Microwave</p>
+                        <small>1200W</small>
+                    </div>
+
+                    <div class="appliance" data-power="300" data-name="TV">
+                        <div class="appliance-icon">📺</div>
+                        <p>Television</p>
+                        <small>300W</small>
+                    </div>
+
+                    <div class="appliance" data-power="800" data-name="Washing Machine">
+                        <div class="appliance-icon">🌀</div>
+                        <p>Washer</p>
+                        <small>800W</small>
+                    </div>
+
+                    <div class="appliance" data-power="50" data-name="WiFi Router">
+                        <div class="appliance-icon">📶</div>
+                        <p>Router</p>
+                        <small>50W</small>
+                    </div>
+                </div>
+
+                <div class="power-meter">
+                    <p style="color: var(--text-dark); margin-bottom: 1rem;">Current Power Consumption</p>
+                    <div class="power-reading"><span id="totalPower">0</span> W</div>
+                    <p style="color: var(--text-dark); margin-top: 1rem;">Cost: $<span id="powerCost">0.00</span>/hour @ $0.12/kWh</p>
+                </div>
+
+                <div style="margin-top: 3rem; padding: 2rem; background: rgba(255, 177, 0, 0.1); border: 2px solid var(--highlight-yellow); border-radius: 15px;">
+                    <h3 style="color: var(--highlight-yellow); margin-bottom: 1rem;">☀️ Solar Net Metering</h3>
+                    <p>Solar panels generating: <strong style="color: var(--accent-neon);">500W</strong></p>
+                    <p>Net consumption: <strong style="color: var(--highlight-yellow);"><span id="netPower">-500</span> W</strong></p>
+                    <p style="margin-top: 1rem; font-size: 0.9rem; color: var(--text-dark);">Negative values mean you're feeding power back to the grid!</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Simulation Lab -->
+    <section class="section" id="simulation">
+        <div class="container">
+            <h2 class="section-title">Simulation Lab</h2>
+            <p class="section-subtitle">Build and test your own power system circuits</p>
+            
+            <div class="simulation-container">
+                <div class="component-palette">
+                    <div class="component-item" draggable="true" data-component="generator">⚡ Generator</div>
+                    <div class="component-item" draggable="true" data-component="transformer">🔄 Transformer</div>
+                    <div class="component-item" draggable="true" data-component="transmission">🔌 Transmission Line</div>
+                    <div class="component-item" draggable="true" data-component="load">💡 Load</div>
+                    <div class="component-item" draggable="true" data-component="breaker">🔒 Circuit Breaker</div>
+                </div>
+
+                <div class="canvas-area" id="simulationCanvas">
+                    <p style="text-align: center; padding: 3rem; color: var(--text-dark);">Drag components here to build your circuit</p>
+                </div>
+
+                <div class="simulation-controls">
+                    <button class="sim-button" id="runSimulation">▶️ Run Simulation</button>
+                    <button class="sim-button" id="faultTest">⚠️ Fault Test</button>
+                    <button class="sim-button danger" id="clearCanvas">🗑️ Clear</button>
+                </div>
+
+                <div id="simulationOutput" style="margin-top: 2rem; padding: 1.5rem; background: rgba(0, 255, 209, 0.05); border-radius: 10px; display: none;">
+                    <h4 style="color: var(--accent-neon); margin-bottom: 1rem;">Simulation Results</h4>
+                    <div id="outputText" style="color: var(--text-dark);"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section class="section" id="about">
+        <div class="container">
+            <h2 class="section-title">About PowerPulse 360°</h2>
+            
+            <div class="about-content">
+                <p>PowerPulse 360° is an immersive educational platform designed to help Electrical Engineering students understand the complete power system lifecycle - from generation to consumption.</p>
+                
+                <p>Our interactive 3D visualizations and simulations make complex electrical concepts easy to grasp, providing hands-on learning experiences that complement traditional education.</p>
+
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">🎓</div>
+                        <h3>Educational</h3>
+                        <p>Comprehensive learning modules covering all aspects of power systems</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">🎮</div>
+                        <h3>Interactive</h3>
+                        <p>Hands-on simulations and experiments to reinforce concepts</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">🌐</div>
+                        <h3>Immersive</h3>
+                        <p>3D visualizations bring power systems to life</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">📱</div>
+                        <h3>Accessible</h3>
+                        <p>Learn anywhere, anytime on any device</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="contact-form">
+                <h3 style="text-align: center; color: var(--accent-neon); margin-bottom: 2rem;">Contact & Feedback</h3>
+                <form id="contactForm">
+                    <div class="form-group">
+                        <label for="name">Name</label>
+                        <input type="text" id="name" name="name" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="message">Message / Feedback</label>
+                        <textarea id="message" name="message" required></textarea>
+                    </div>
+
+                    <button type="submit" class="cta-button" style="width: 100%;">Send Message</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2025 PowerPulse 360° - Electrical Engineering Education Platform</p>
+        <p style="margin-top: 0.5rem;">Built with Three.js, GSAP, and modern web technologies</p>
+    </footer>
+
+    <script>
+        // Initialize GSAP ScrollTrigger
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Loading Screen
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.getElementById('loading').classList.add('hidden');
+            }, 1000);
+        });
+
+        // Smooth Scrolling
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+
+        // Three.js Scene Setup
+        const canvasContainer = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        canvasContainer.appendChild(renderer.domElement);
+
+        // Create Power Grid Visualization
+        const geometry = new THREE.IcosahedronGeometry(1, 1);
+        const material = new THREE.MeshBasicMaterial({
+            color: 0x00FFD1,
+            wireframe: true
+        });
+        const sphere = new THREE.Mesh(geometry, material);
+        scene.add(sphere);
+
+        // Add particles
+        const particlesGeometry = new THREE.BufferGeometry();
+        const particlesCount = 1000;
+        const posArray = new Float32Array(particlesCount * 3);
+
+        for(let i = 0; i < particlesCount * 3; i++) {
+            posArray[i] = (Math.random() - 0.5) * 10;
+        }
+
+        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        const particlesMaterial = new THREE.PointsMaterial({
+            size: 0.005,
+            color: 0x00FFD1
+        });
+        const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+        scene.add(particlesMesh);
+
+        camera.position.z = 3;
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            sphere.rotation.x += 0.001;
+            sphere.rotation.y += 0.002;
+            particlesMesh.rotation.y += 0.0005;
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Window resize handler
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Transmission Lines Animation
+        function createTransmissionLines() {
+            const container = document.getElementById('transmissionLines');
+            
+            // Create substations
+            const substations = [
+                { top: '20%', left: '10%' },
+                { top: '60%', left: '30%' },
+                { top: '30%', left: '70%' },
+                { top: '70%', left: '90%' }
+            ];
+
+            substations.forEach((pos, index) => {
+                const substation = document.createElement('div');
+                substation.className = 'substation';
+                substation.style.top = pos.top;
+                substation.style.left = pos.left;
+                substation.innerHTML = '⚡';
+                container.appendChild(substation);
+            });
+
+            // Create power lines
+            const lines = [
+                { top: '25%', left: '15%', width: '20%', rotate: '15deg' },
+                { top: '50%', left: '35%', width: '35%', rotate: '-10deg' },
+                { top: '40%', left: '20%', width: '45%', rotate: '5deg' }
+            ];
+
+            lines.forEach(line => {
+                const powerLine = document.createElement('div');
+                powerLine.className = 'power-line';
+                powerLine.style.top = line.top;
+                powerLine.style.left = line.left;
+                powerLine.style.width = line.width;
+                powerLine.style.transform = `rotate(${line.rotate})`;
+                powerLine.style.backgroundSize = '200% 100%';
+                container.appendChild(powerLine);
+            });
+        }
+        createTransmissionLines();
+
+        // Consumer Section - Appliances
+        let totalPowerConsumption = 0;
+        const solarGeneration = 500; // watts
+        const appliances = document.querySelectorAll('.appliance');
+
+        appliances.forEach(appliance => {
+            appliance.addEventListener('click', () => {
+                appliance.classList.toggle('active');
+                updatePowerConsumption();
+            });
+        });
+
+        function updatePowerConsumption() {
+            totalPowerConsumption = 0;
+            appliances.forEach(appliance => {
+                if (appliance.classList.contains('active')) {
+                    totalPowerConsumption += parseInt(appliance.dataset.power);
+                }
+            });
+
+            document.getElementById('totalPower').textContent = totalPowerConsumption;
+            const costPerHour = (totalPowerConsumption / 1000) * 0.12;
+            document.getElementById('powerCost').textContent = costPerHour.toFixed(2);
+            
+            const netPower = totalPowerConsumption - solarGeneration;
+            document.getElementById('netPower').textContent = netPower;
+        }
+
+        // Simulation Lab
+        const simulationCanvas = document.getElementById('simulationCanvas');
+        const components = document.querySelectorAll('.component-item');
+        let droppedComponents = [];
+
+        components.forEach(component => {
+            component.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('component', e.target.dataset.component);
+            });
+        });
+
+        simulationCanvas.addEventListener('dragover', (e) => {
+            e.preventDefault();
+        });
+
+        simulationCanvas.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const componentType = e.dataTransfer.getData('component');
+            const rect = simulationCanvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            addComponentToCanvas(componentType, x, y);
+        });
+
+        function addComponentToCanvas(type, x, y) {
+            const componentMap = {
+                'generator': '⚡',
+                'transformer': '🔄',
+                'transmission': '🔌',
+                'load': '💡',
+                'breaker': '🔒'
+            };
+
+            const component = document.createElement('div');
+            component.style.position = 'absolute';
+            component.style.left = x + 'px';
+            component.style.top = y + 'px';
+            component.style.fontSize = '2rem';
+            component.style.cursor = 'move';
+            component.innerHTML = componentMap[type];
+            component.dataset.type = type;
+
+            simulationCanvas.appendChild(component);
+            droppedComponents.push({ type, x, y });
+
+            // Make draggable within canvas
+            let isDragging = false;
+            component.addEventListener('mousedown', () => isDragging = true);
+            document.addEventListener('mouseup', () => isDragging = false);
+            document.addEventListener('mousemove', (e) => {
+                if (isDragging) {
+                    const rect = simulationCanvas.getBoundingClientRect();
+                    component.style.left = (e.clientX - rect.left) + 'px';
+                    component.style.top = (e.clientY - rect.top) + 'px';
+                }
+            });
+        }
+
+        document.getElementById('runSimulation').addEventListener('click', () => {
+            const output = document.getElementById('simulationOutput');
+            const outputText = document.getElementById('outputText');
+            
+            if (droppedComponents.length === 0) {
+                outputText.innerHTML = '<p style="color: var(--highlight-yellow);">⚠️ Please add components to the canvas first!</p>';
+            } else {
+                const hasGenerator = droppedComponents.some(c => c.type === 'generator');
+                const hasLoad = droppedComponents.some(c => c.type === 'load');
+                
+                if (hasGenerator && hasLoad) {
+                    outputText.innerHTML = `
+                        <p style="color: var(--accent-neon);">✅ Circuit is valid!</p>
+                        <p>Components: ${droppedComponents.length}</p>
+                        <p>Current flow: 10A</p>
+                        <p>Voltage: 230V</p>
+                        <p>Power: 2.3kW</p>
+                        <p>Status: Normal operation</p>
+                    `;
+                } else {
+                    outputText.innerHTML = '<p style="color: var(--highlight-yellow);">⚠️ Circuit needs at least a Generator and a Load!</p>';
+                }
+            }
+            output.style.display = 'block';
+        });
+
+        document.getElementById('faultTest').addEventListener('click', () => {
+            const output = document.getElementById('simulationOutput');
+            const outputText = document.getElementById('outputText');
+            
+            outputText.innerHTML = `
+                <p style="color: #FF4757;">🚨 FAULT DETECTED!</p>
+                <p>Type: Short Circuit</p>
+                <p>Current: 150A (Overcurrent!)</p>
+                <p>Circuit Breaker: TRIPPED</p>
+                <p>Action: System isolated for safety</p>
+            `;
+            output.style.display = 'block';
+        });
+
+        document.getElementById('clearCanvas').addEventListener('click', () => {
+            const components = simulationCanvas.querySelectorAll('div[data-type]');
+            components.forEach(c => c.remove());
+            droppedComponents = [];
+            document.getElementById('simulationOutput').style.display = 'none';
+        });
+
+        // Contact Form
+        document.getElementById('contactForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            alert('Thank you for your feedback! We will get back to you soon.');
+            e.target.reset();
+        });
+
+        // GSAP Animations
+        gsap.from('.plant-card', {
+            scrollTrigger: {
+                trigger: '#generation',
+                start: 'top center',
+            },
+            y: 50,
+            opacity: 0,
+            duration: 0.8,
+            stagger: 0.2
+        });
+
+        gsap.from('.meter-card', {
+            scrollTrigger: {
+                trigger: '#distribution',
+                start: 'top center',
+            },
+            scale: 0.8,
+            opacity: 0,
+            duration: 0.8,
+            stagger: 0.15
+        });
+
+        gsap.from('.appliance', {
+            scrollTrigger: {
+                trigger: '#consumer',
+                start: 'top center',
+            },
+            y: 30,
+            opacity: 0,
+            duration: 0.6,
+            stagger: 0.1
+        });
+
+        // Animate meters
+        function animateMeters() {
+            setInterval(() => {
+                const loadBalance = 70 + Math.random() * 10;
+                document.getElementById('loadBalance').textContent = loadBalance.toFixed(0) + '%';
+                
+                const voltagePos = 50 + Math.random() * 20;
+                document.getElementById('voltageMarker').style.left = voltagePos + '%';
+                
+                const powerQuality = 95 + Math.random() * 5;
+                document.getElementById('powerQuality').textContent = powerQuality.toFixed(0) + '%';
+            }, 2000);
+        }
+        animateMeters();
+
+        console.log('%c⚡ PowerPulse 360° - Power System Simulator', 'color: #00FFD1; font-size: 20px; font-weight: bold;');
+        console.log('%cEducational Platform for Electrical Engineering Students', 'color: #FFB100; font-size: 14px;');
+    </script>
+</body>
+</html>
